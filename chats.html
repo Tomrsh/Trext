@@ -14,23 +14,20 @@
         <a href="calls.html">Calls</a>
         <a href="#" id="logout-btn">Logout</a>
     </header>
-
     <main class="chat-main-content">
         <div class="friends-list-container">
             <h3>Friends</h3>
-            <ul id="friends-list">
-                </ul>
+            <ul id="friends-list"></ul>
         </div>
-
         <div class="chat-window-container">
             <div id="chat-header">
-                <button id="call-btn">Call</button>
-                <button id="video-call-btn">Video Call</button>
-            </div>
-            
-            <div id="messages-container">
+                <span id="chat-friend-name">Select a friend to chat</span>
+                <div class="call-buttons">
+                    <button id="call-btn" style="display: none;">📞</button>
+                    <button id="video-call-btn" style="display: none;">📹</button>
                 </div>
-
+            </div>
+            <div id="messages-container"></div>
             <div class="message-input-container">
                 <input type="text" id="message-input" placeholder="Type a message...">
                 <label for="file-input" class="file-label">📁</label>
@@ -39,12 +36,11 @@
             </div>
         </div>
     </main>
-
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
     <script src="scripts/chats.js"></script>
 </body>
 </html>

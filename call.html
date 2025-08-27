@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call</title>
+    <link rel="stylesheet" href="styles/call.css">
+</head>
+<body>
+    <div class="call-container">
+        <video id="local-video" autoplay muted></video>
+        <video id="remote-video" autoplay></video>
+        <div class="controls-bar">
+            <button id="hangup-btn">Hang Up</button>
+            <button id="mute-mic-btn">Mute</button>
+            <button id="mute-cam-btn">Off Cam</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="scripts/call.js"></script>
+</body>
+</html>
