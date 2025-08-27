@@ -25,11 +25,11 @@ const logoutBtn = document.getElementById('logout-btn');
 let currentUser;
 let currentChatFriendId = null;
 let currentChatFriendName = null;
+let chatRefListener = null; // To hold the database listener
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
         loadFriendsList();
-        listenForIncomingCalls(); // <-- Naya function
     } else {
         window.location.href = 'index.html';
     }
@@ -67,56 +67,86 @@ friendsList.addEventListener('click', (e) => {
         document.getElementById('chat-friend-name').textContent = currentChatFriendName;
         document.getElementById('call-btn').style.display = 'inline-block';
         document.getElementById('video-call-btn').style.display = 'inline-block';
-        messagesContainer.innerHTML = '';
+        messagesContainer.innerHTML = ''; // Clear old messages
         loadChatHistory(currentChatFriendId);
     }
 });
 document.getElementById('call-btn').addEventListener('click', () => {
     if (currentChatFriendId) {
-        initiateCall(currentChatFriendId, 'voice');
+        window.open(`call.html?friendId=${currentChatFriendId}&type=voice`, '_blank');
     }
 });
 document.getElementById('video-call-btn').addEventListener('click', () => {
     if (currentChatFriendId) {
-        initiateCall(currentChatFriendId, 'video');
+        window.open(`call.html?friendId=${currentChatFriendId}&type=video`, '_blank');
     }
 });
-function initiateCall(calleeId, type) {
-    const callData = {
-        callerId: currentUser.uid,
-        callerName: currentUser.displayName,
-        type: type,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        status: 'ringing'
-    };
-    const callRef = database.ref(`calls/${calleeId}`).push();
-    callRef.set(callData)
-        .then(() => {
-            alert(`Calling ${currentChatFriendName}...`);
-            setTimeout(() => {
-                database.ref(`calls/${calleeId}/${callRef.key}`).remove();
-                alert('Call timed out.');
-            }, 15000); // 15-second timeout
-        });
-}
-function listenForIncomingCalls() {
-    const callsRef = database.ref(`calls/${currentUser.uid}`);
-    callsRef.on('child_added', (snapshot) => {
-        const call = snapshot.val();
-        if (call.status === 'ringing') {
-            const callerName = call.callerName || 'Unknown User';
-            const callType = call.type === 'video' ? 'Video Call' : 'Voice Call';
-            if (confirm(`${callerName} is calling you. Do you want to receive the ${callType}?`)) {
-                // If user accepts, open the call page with appropriate parameters
-                window.open(`call.html?callId=${snapshot.key}&callerId=${call.callerId}&type=${call.type}`, '_blank');
-                // Remove the call from the database after a small delay
-                database.ref(`calls/${currentUser.uid}/${snapshot.key}`).remove();
-            } else {
-                // User dismissed the call, remove it from the database
-                database.ref(`calls/${currentUser.uid}/${snapshot.key}`).remove();
-            }
-        }
+function loadChatHistory(friendId) {
+    if (chatRefListener) {
+        // Detach old listener to prevent data leaks and duplication
+        chatRefListener.off();
+    }
+    const chatRoomId = getChatRoomId(currentUser.uid, friendId);
+    const chatRef = database.ref(`chat_rooms/${chatRoomId}`);
+    // Store the listener reference
+    chatRefListener = chatRef.on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        displayMessage(message);
     });
 }
-// Other functions for chat, file sharing remain the same
-// ... (Your existing code for getChatRoomId, displayMessage, sendMessage, uploadFile) ...
+function getChatRoomId(userId1, userId2) {
+    return userId1 < userId2 ? `${userId1}-${userId2}` : `${userId2}-${userId1}`;
+}
+function displayMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    if (message.senderId === currentUser.uid) {
+        messageDiv.classList.add('sent');
+    } else {
+        messageDiv.classList.add('received');
+    }
+    if (message.type === 'text') {
+        messageDiv.textContent = message.content;
+    } else if (message.type === 'image') {
+        messageDiv.innerHTML = `<a href="${message.content}" target="_blank"><img src="${message.content}" alt="Shared Image" style="max-width: 200px;"></a>`;
+    }
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+sendBtn.addEventListener('click', () => {
+    const messageText = messageInput.value.trim();
+    if (messageText !== '' && currentChatFriendId) {
+        sendMessage(messageText, 'text');
+        messageInput.value = '';
+    }
+});
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file && currentChatFriendId) {
+        uploadFile(file);
+    }
+});
+function sendMessage(content, type) {
+    const chatRoomId = getChatRoomId(currentUser.uid, currentChatFriendId);
+    const newMessageRef = database.ref(`chat_rooms/${chatRoomId}`).push();
+    newMessageRef.set({
+        senderId: currentUser.uid,
+        content: content,
+        type: type,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+function uploadFile(file) {
+    const storageRef = storage.ref(`shared_files/${currentUser.uid}/${file.name}`);
+    const uploadTask = storageRef.put(file);
+    uploadTask.on('state_changed', null,
+        (error) => {
+            console.error('File upload failed:', error);
+        },
+        () => {
+            uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                sendMessage(downloadURL, 'image');
+            });
+        }
+    );
+                }
