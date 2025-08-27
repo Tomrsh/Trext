@@ -1,3 +1,4 @@
+// scripts/call.js
 const firebaseConfig = {
     apiKey: "AIzaSyBAyx04GN-5MsBSztE2TQ4zViMs81iCFI8",
     authDomain: "trext-91b51.firebaseapp.com",
@@ -16,23 +17,33 @@ const database = firebase.database();
 const localVideo = document.getElementById('local-video');
 const remoteVideo = document.getElementById('remote-video');
 const hangupBtn = document.getElementById('hangup-btn');
-const urlParams = new URLSearchParams(window.location.search);
-const callType = urlParams.get('type');
-const friendId = urlParams.get('friendId');
 const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 let peerConnection;
 let localStream;
 let callRef;
 let currentUser;
+let isCaller = false;
+const urlParams = new URLSearchParams(window.location.search);
+const callId = urlParams.get('callId'); // Check if it's an incoming call
+const friendId = urlParams.get('friendId'); // Check if it's an outgoing call
+const callType = urlParams.get('type');
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         currentUser = user;
-        startCall();
+        if (callId) {
+            // This user is the receiver
+            isCaller = false;
+            await startReceiverCall();
+        } else if (friendId) {
+            // This user is the caller
+            isCaller = true;
+            await startCallerCall();
+        }
     } else {
         window.close();
     }
 });
-async function startCall() {
+async function startCallerCall() {
     localStream = await navigator.mediaDevices.getUserMedia({
         video: callType === 'video',
         audio: true
@@ -59,19 +70,49 @@ async function startCall() {
         offer: offer,
         type: callType
     });
-    database.ref(`activeCalls/${callRef.key}`).on('value', async (snapshot) => {
+    callRef.on('value', async (snapshot) => {
         const data = snapshot.val();
         if (data && data.answer && !peerConnection.currentRemoteDescription) {
             const answer = new RTCSessionDescription(data.answer);
             await peerConnection.setRemoteDescription(answer);
         }
     });
-    database.ref(`activeCalls/${callRef.key}/ice-candidates`).on('child_added', (snapshot) => {
+    callRef.child('ice-candidates').on('child_added', (snapshot) => {
         if (snapshot.val()) {
             const candidate = new RTCIceCandidate(snapshot.val());
             peerConnection.addIceCandidate(candidate);
         }
     });
+}
+async function startReceiverCall() {
+    localStream = await navigator.mediaDevices.getUserMedia({
+        video: callType === 'video',
+        audio: true
+    });
+    localVideo.srcObject = localStream;
+    peerConnection = new RTCPeerConnection(servers);
+    localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+    });
+    peerConnection.ontrack = (event) => {
+        remoteVideo.srcObject = event.streams[0];
+    };
+    const callData = (await database.ref(`calls/${currentUser.uid}/${callId}`).once('value')).val();
+    if (callData) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        callRef = database.ref(`activeCalls/${callId}`);
+        await callRef.update({
+            answer: answer
+        });
+        callRef.child('ice-candidates').on('child_added', (snapshot) => {
+            if (snapshot.val()) {
+                const candidate = new RTCIceCandidate(snapshot.val());
+                peerConnection.addIceCandidate(candidate);
+            }
+        });
+    }
 }
 hangupBtn.addEventListener('click', () => {
     if (peerConnection) peerConnection.close();
