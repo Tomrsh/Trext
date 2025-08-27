@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chats - Chat App</title>
+    <link rel="stylesheet" href="styles/chats.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="home.html">Home</a>
+        <a href="chats.html" class="active">Chats</a>
+        <a href="requests.html">Requests</a>
+        <a href="calls.html">Calls</a>
+        <a href="#" id="logout-btn">Logout</a>
+    </header>
+
+    <main class="chat-main-content">
+        <div class="friends-list-container">
+            <h3>Friends</h3>
+            <ul id="friends-list">
+                </ul>
+        </div>
+
+        <div class="chat-window-container">
+            <div id="chat-header">
+                <button id="call-btn">Call</button>
+                <button id="video-call-btn">Video Call</button>
+            </div>
+            
+            <div id="messages-container">
+                </div>
+
+            <div class="message-input-container">
+                <input type="text" id="message-input" placeholder="Type a message...">
+                <label for="file-input" class="file-label">📁</label>
+                <input type="file" id="file-input" style="display: none;">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+    <script src="scripts/chats.js"></script>
+</body>
+</html>

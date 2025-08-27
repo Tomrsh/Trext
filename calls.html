@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calls - Chat App</title>
+    <link rel="stylesheet" href="styles/calls.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="home.html">Home</a>
+        <a href="chats.html">Chats</a>
+        <a href="requests.html">Requests</a>
+        <a href="calls.html" class="active">Calls</a>
+        <a href="#" id="logout-btn">Logout</a>
+    </header>
+
+    <main class="main-content">
+        <h2>Call History</h2>
+        <ul id="call-history-list">
+            </ul>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script src="scripts/calls.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requests - Chat App</title>
+    <link rel="stylesheet" href="styles/requests.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="home.html">Home</a>
+        <a href="chats.html">Chats</a>
+        <a href="requests.html" class="active">Requests</a>
+        <a href="calls.html">Calls</a>
+        <a href="#" id="logout-btn">Logout</a>
+    </header>
+
+    <main class="main-content">
+        <h2>Requests</h2>
+        
+        <div class="requests-section">
+            <h3>Follow Requests</h3>
+            <ul id="follow-requests-list">
+                </ul>
+        </div>
+        
+        <div class="requests-section">
+            <h3>Chat Requests</h3>
+            <ul id="chat-requests-list">
+                </ul>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="scripts/requests.js"></script>
+</body>
+</html>
