@@ -1,10 +1,13 @@
 // scripts/chats.js
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    databaseURL: "YOUR_DATABASE_URL",
-    storageBucket: "YOUR_STORAGE_BUCKET_URL"
+    apiKey: "AIzaSyBAyx04GN-5MsBSztE2TQ4zViMs81iCFI8",
+    authDomain: "trext-91b51.firebaseapp.com",
+    databaseURL: "https://trext-91b51-default-rtdb.firebaseio.com",
+    projectId: "trext-91b51",
+    storageBucket: "trext-91b51.firebasestorage.app",
+    messagingSenderId: "396150208973",
+    appId: "1:396150208973:web:1e6ca3f5ce9fed7a5cec84",
+    measurementId: "G-VVVKCLZYEE"
 };
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
