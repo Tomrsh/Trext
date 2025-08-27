@@ -1,0 +1,117 @@
+/* chats.css */
+:root {
+    --primary-color: #007BFF;
+    --background-color: #f0f2f5;
+    --card-background: #ffffff;
+    --text-color: #333;
+    --light-text-color: #666;
+    --border-color: #e0e0e0;
+    --hover-effect: #e9ecef;
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --border-radius: 10px;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: var(--background-color);
+    margin: 0;
+}
+
+.navbar {
+    background-color: var(--card-background);
+    box-shadow: var(--shadow);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar a {
+    color: var(--light-text-color);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.navbar a.active, .navbar a:hover {
+    background-color: var(--hover-effect);
+    color: var(--primary-color);
+}
+
+.chat-main-content {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem;
+    height: calc(100vh - 80px); /* Adjust height for navbar */
+}
+
+.friends-list-container {
+    background-color: var(--card-background);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    width: 300px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+#friends-list li {
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.chat-window-container {
+    background-color: var(--card-background);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#messages-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding-right: 1rem;
+    gap: 10px;
+}
+
+.message {
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+.message.sent {
+    background-color: var(--primary-color);
+    color: white;
+    align-self: flex-end;
+}
+
+.message.received {
+    background-color: var(--hover-effect);
+    align-self: flex-start;
+}
+
+.message-input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+#message-input {
+    flex-grow: 1;
+}
+
+.file-label {
+    cursor: pointer;
+    font-size: 1.5rem;
+}
