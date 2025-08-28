@@ -52,18 +52,32 @@ async function startCallerCall() {
         remoteVideo.srcObject = event.streams[0];
     };
     callRef = database.ref('activeCalls').push();
+    let iceCandidates = [];
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            callRef.child('callerCandidates').push(event.candidate);
+            iceCandidates.push(event.candidate);
         }
     };
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
+    // Wait for ICE candidates to be gathered
+    await new Promise(resolve => {
+        if (peerConnection.iceGatheringState === 'complete') {
+            resolve();
+        } else {
+            peerConnection.onicegatheringstatechange = () => {
+                if (peerConnection.iceGatheringState === 'complete') {
+                    resolve();
+                }
+            };
+        }
+    });
     await callRef.set({
         callerId: currentUser.uid,
         calleeId: outgoingFriendId,
         offer: offer,
-        type: callType
+        type: callType,
+        callerCandidates: iceCandidates
     });
     callRef.child('answer').on('value', async (snapshot) => {
         const answer = snapshot.val();
@@ -71,10 +85,14 @@ async function startCallerCall() {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
         }
     });
-    callRef.child('calleeCandidates').on('child_added', (snapshot) => {
-        if (snapshot.val()) {
-            const candidate = new RTCIceCandidate(snapshot.val());
-            peerConnection.addIceCandidate(candidate);
+    callRef.child('calleeCandidates').on('value', (snapshot) => {
+        const candidates = snapshot.val();
+        if (candidates) {
+            candidates.forEach(candidate => {
+                if (candidate) {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                }
+            });
         }
     });
 }
@@ -92,9 +110,10 @@ async function startReceiverCall() {
         remoteVideo.srcObject = event.streams[0];
     };
     callRef = database.ref(`activeCalls/${incomingCallId}`);
+    let iceCandidates = [];
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            callRef.child('calleeCandidates').push(event.candidate);
+            iceCandidates.push(event.candidate);
         }
     };
     const callData = (await callRef.once('value')).val();
@@ -102,14 +121,30 @@ async function startReceiverCall() {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        await callRef.child('answer').set(answer);
-    }
-    callRef.child('callerCandidates').on('child_added', (snapshot) => {
-        if (snapshot.val()) {
-            const candidate = new RTCIceCandidate(snapshot.val());
-            peerConnection.addIceCandidate(candidate);
+        await new Promise(resolve => {
+            if (peerConnection.iceGatheringState === 'complete') {
+                resolve();
+            } else {
+                peerConnection.onicegatheringstatechange = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        resolve();
+                    }
+                };
+            }
+        });
+        await callRef.update({
+            answer: answer,
+            calleeCandidates: iceCandidates
+        });
+        const callerCandidates = callData.callerCandidates;
+        if (callerCandidates) {
+            callerCandidates.forEach(candidate => {
+                if (candidate) {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                }
+            });
         }
-    });
+    }
 }
 hangupBtn.addEventListener('click', () => {
     if (peerConnection) peerConnection.close();
