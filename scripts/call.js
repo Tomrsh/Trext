@@ -54,7 +54,7 @@ async function startCallerCall() {
     callRef = database.ref('activeCalls').push();
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            callRef.child('ice-candidates').push(event.candidate);
+            callRef.child('callerCandidates').push(event.candidate);
         }
     };
     const offer = await peerConnection.createOffer();
@@ -65,14 +65,13 @@ async function startCallerCall() {
         offer: offer,
         type: callType
     });
-    callRef.on('value', async (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.answer && !peerConnection.currentRemoteDescription) {
-            const answer = new RTCSessionDescription(data.answer);
-            await peerConnection.setRemoteDescription(answer);
+    callRef.child('answer').on('value', async (snapshot) => {
+        const answer = snapshot.val();
+        if (answer && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
         }
     });
-    callRef.child('ice-candidates').on('child_added', (snapshot) => {
+    callRef.child('calleeCandidates').on('child_added', (snapshot) => {
         if (snapshot.val()) {
             const candidate = new RTCIceCandidate(snapshot.val());
             peerConnection.addIceCandidate(candidate);
@@ -93,16 +92,19 @@ async function startReceiverCall() {
         remoteVideo.srcObject = event.streams[0];
     };
     callRef = database.ref(`activeCalls/${incomingCallId}`);
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            callRef.child('calleeCandidates').push(event.candidate);
+        }
+    };
     const callData = (await callRef.once('value')).val();
     if (callData) {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        await callRef.update({
-            answer: answer
-        });
+        await callRef.child('answer').set(answer);
     }
-    callRef.child('ice-candidates').on('child_added', (snapshot) => {
+    callRef.child('callerCandidates').on('child_added', (snapshot) => {
         if (snapshot.val()) {
             const candidate = new RTCIceCandidate(snapshot.val());
             peerConnection.addIceCandidate(candidate);

@@ -26,7 +26,7 @@ let currentUser;
 let currentChatFriendId = null;
 let currentChatFriendName = null;
 let chatRefListener = null;
-let callTimeoutTimer = null; // New variable to store the timer
+let callTimeoutTimer = null;
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
@@ -96,14 +96,12 @@ function initiateCall(calleeId, type) {
     callRef.set(callData)
         .then(() => {
             callRingtone.play();
-            // Start the timer
             callTimeoutTimer = setTimeout(() => {
                 callRingtone.pause();
                 callRingtone.currentTime = 0;
                 database.ref(`calls/${calleeId}/${callKey}`).remove();
                 alert('Call timed out.');
             }, 10000);
-            // Listen for receiver's response in `activeCalls` to cancel the timer
             database.ref('activeCalls').orderByChild('calleeId').equalTo(calleeId)
                 .on('child_added', (snapshot) => {
                     const activeCall = snapshot.val();
@@ -111,9 +109,6 @@ function initiateCall(calleeId, type) {
                         clearTimeout(callTimeoutTimer);
                         callRingtone.pause();
                         callRingtone.currentTime = 0;
-                        // The `on` listener remains active, so a manual `off` is not strictly needed
-                        // for this particular logic, but it's good practice.
-                        // However, since `child_added` only fires once for new entries, it's fine.
                     }
                 });
         });
