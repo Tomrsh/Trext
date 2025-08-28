@@ -16,20 +16,21 @@ const auth = firebase.auth();
 const database = firebase.database();
 const storage = firebase.storage();
 const friendsList = document.getElementById('friends-list');
-const chatHeader = document.getElementById('chat-header');
 const messagesContainer = document.getElementById('messages-container');
 const messageInput = document.getElementById('message-input');
 const fileInput = document.getElementById('file-input');
 const sendBtn = document.getElementById('send-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const callRingtone = document.getElementById('call-ringtone');
 let currentUser;
 let currentChatFriendId = null;
 let currentChatFriendName = null;
-let chatRefListener = null; // To hold the database listener
+let chatRefListener = null;
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
         loadFriendsList();
+        listenForIncomingCalls();
     } else {
         window.location.href = 'index.html';
     }
@@ -67,28 +68,63 @@ friendsList.addEventListener('click', (e) => {
         document.getElementById('chat-friend-name').textContent = currentChatFriendName;
         document.getElementById('call-btn').style.display = 'inline-block';
         document.getElementById('video-call-btn').style.display = 'inline-block';
-        messagesContainer.innerHTML = ''; // Clear old messages
+        messagesContainer.innerHTML = '';
         loadChatHistory(currentChatFriendId);
     }
 });
 document.getElementById('call-btn').addEventListener('click', () => {
     if (currentChatFriendId) {
-        window.open(`call.html?friendId=${currentChatFriendId}&type=voice`, '_blank');
+        initiateCall(currentChatFriendId, 'voice');
     }
 });
 document.getElementById('video-call-btn').addEventListener('click', () => {
     if (currentChatFriendId) {
-        window.open(`call.html?friendId=${currentChatFriendId}&type=video`, '_blank');
+        initiateCall(currentChatFriendId, 'video');
     }
 });
+function initiateCall(calleeId, type) {
+    const callData = {
+        callerId: currentUser.uid,
+        callerName: currentUser.displayName,
+        type: type,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        status: 'ringing'
+    };
+    const callRef = database.ref(`calls/${calleeId}`).push();
+    callRef.set(callData)
+        .then(() => {
+            callRingtone.play();
+            setTimeout(() => {
+                callRingtone.pause();
+                callRingtone.currentTime = 0;
+                callRef.remove();
+                alert('Call timed out.');
+            }, 10000);
+        });
+}
+function listenForIncomingCalls() {
+    const callsRef = database.ref(`calls/${currentUser.uid}`);
+    callsRef.on('child_added', (snapshot) => {
+        const call = snapshot.val();
+        if (call.status === 'ringing') {
+            const callerName = call.callerName || 'Unknown User';
+            const callType = call.type === 'video' ? 'Video Call' : 'Voice Call';
+            if (confirm(`${callerName} is calling you. Do you want to receive the ${callType}?`)) {
+                const callId = snapshot.key;
+                window.open(`call.html?callId=${callId}&callerId=${call.callerId}&type=${call.type}`, '_blank');
+                database.ref(`calls/${currentUser.uid}/${callId}`).remove();
+            } else {
+                database.ref(`calls/${currentUser.uid}/${snapshot.key}`).remove();
+            }
+        }
+    });
+}
 function loadChatHistory(friendId) {
     if (chatRefListener) {
-        // Detach old listener to prevent data leaks and duplication
         chatRefListener.off();
     }
     const chatRoomId = getChatRoomId(currentUser.uid, friendId);
     const chatRef = database.ref(`chat_rooms/${chatRoomId}`);
-    // Store the listener reference
     chatRefListener = chatRef.on('child_added', (snapshot) => {
         const message = snapshot.val();
         displayMessage(message);
@@ -149,4 +185,4 @@ function uploadFile(file) {
             });
         }
     );
-                }
+}

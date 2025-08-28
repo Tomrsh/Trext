@@ -22,21 +22,16 @@ let peerConnection;
 let localStream;
 let callRef;
 let currentUser;
-let isCaller = false;
 const urlParams = new URLSearchParams(window.location.search);
-const callId = urlParams.get('callId'); // Check if it's an incoming call
-const friendId = urlParams.get('friendId'); // Check if it's an outgoing call
+const incomingCallId = urlParams.get('callId');
+const outgoingFriendId = urlParams.get('friendId');
 const callType = urlParams.get('type');
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         currentUser = user;
-        if (callId) {
-            // This user is the receiver
-            isCaller = false;
+        if (incomingCallId) {
             await startReceiverCall();
-        } else if (friendId) {
-            // This user is the caller
-            isCaller = true;
+        } else if (outgoingFriendId) {
             await startCallerCall();
         }
     } else {
@@ -66,7 +61,7 @@ async function startCallerCall() {
     await peerConnection.setLocalDescription(offer);
     await callRef.set({
         callerId: currentUser.uid,
-        calleeId: friendId,
+        calleeId: outgoingFriendId,
         offer: offer,
         type: callType
     });
@@ -97,22 +92,22 @@ async function startReceiverCall() {
     peerConnection.ontrack = (event) => {
         remoteVideo.srcObject = event.streams[0];
     };
-    const callData = (await database.ref(`calls/${currentUser.uid}/${callId}`).once('value')).val();
+    callRef = database.ref(`activeCalls/${incomingCallId}`);
+    const callData = (await callRef.once('value')).val();
     if (callData) {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        callRef = database.ref(`activeCalls/${callId}`);
         await callRef.update({
             answer: answer
         });
-        callRef.child('ice-candidates').on('child_added', (snapshot) => {
-            if (snapshot.val()) {
-                const candidate = new RTCIceCandidate(snapshot.val());
-                peerConnection.addIceCandidate(candidate);
-            }
-        });
     }
+    callRef.child('ice-candidates').on('child_added', (snapshot) => {
+        if (snapshot.val()) {
+            const candidate = new RTCIceCandidate(snapshot.val());
+            peerConnection.addIceCandidate(candidate);
+        }
+    });
 }
 hangupBtn.addEventListener('click', () => {
     if (peerConnection) peerConnection.close();
